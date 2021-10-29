@@ -9,6 +9,11 @@ from parser import Task, parse_date
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/tasks']
+TODO_LIST = os.environ.get("todo_list", "MTQ4MDYwMzA5MTAyMTUxMTIxMTU6MDow")
+cached_token_file = os.environ.get(
+    "token", '/Users/suyogsoti/code/add_task/token.json')
+client_secrets_file = os.environ.get(
+    "client_secrect", '/Users/suyogsoti/code/add_task/credentials.json')
 
 
 def get_task_service():
@@ -19,26 +24,25 @@ def get_task_service():
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('/Users/suyogsoti/code/add_task/token.json'):
-        creds = Credentials.from_authorized_user_file(
-            '/Users/suyogsoti/code/add_task/token.json', SCOPES)
+    if os.path.exists(cached_token_file):
+        creds = Credentials.from_authorized_user_file(cached_token_file,
+                                                      SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                '/Users/suyogsoti/code/add_task/credentials.json', SCOPES)
+                client_secrets_file, SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open('/Users/suyogsoti/code/add_task/token.json', 'w') as token:
+        with open(cached_token_file, 'w') as token:
             token.write(creds.to_json())
 
     return build('tasks', 'v1', credentials=creds).tasks()
 
 
 tasks = get_task_service()
-TODO_LIST = "MTQ4MDYwMzA5MTAyMTUxMTIxMTU6MDow"
 
 
 def create_task(task: Task):
@@ -60,7 +64,10 @@ def get_tasks() -> list[Task]:
     for t in items:
         if t['status'] != 'needsAction':
             continue
-        task_list.append(Task(title=t.get('title', None), description=t.get("notes", None), duedate=t.get("due", None)))
+        task_list.append(
+            Task(title=t.get('title', None),
+                 description=t.get("notes", None),
+                 duedate=t.get("due", None)))
     return task_list
 
 
