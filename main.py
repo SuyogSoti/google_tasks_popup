@@ -7,9 +7,9 @@ from kivymd.uix.screen import Screen
 from kivy.uix.scrollview import ScrollView
 from kivymd.uix.gridlayout import MDGridLayout
 from dataclasses import asdict
-from parser import parse_text
+from parser import parse_text, Task
 import json
-from google_task import create_task
+from google_task import create_task, get_tasks
 
 
 class TaskInput(MDTextField):
@@ -31,6 +31,9 @@ def on_enter(instance):
 
 def get_on_text(label: MDLabel) -> callable:
     def on_text(intance: TaskInput, value: str) -> None:
+        if not value:
+            label.text = format_tasks(get_tasks())
+            return
         task = parse_text(value)
         label.text = json.dumps(asdict(task), indent=4)
 
@@ -46,10 +49,21 @@ def build_input_box(label: MDLabel):
     return tsk_input
 
 
+def format_tasks(tasks: list[Task]) -> str:
+    text = "\n\n\n"
+    for t in tasks:
+        text += f"""
+            title: {t.title}
+                    notes: {t.description}
+                    due:   {t.duedate}
+        """
+    print(text)
+    return text
+
 class AddGoogleTask(MDApp):
     def build(self):
-        Window.size = (900, 400)
-        label = MDLabel(font_style="H4")
+        Window.size = (900, 900)
+        label = MDLabel(text=format_tasks(get_tasks()))
         scrollview = ScrollView(do_scroll_x=True, do_scroll_y=True)
         scrollview.add_widget(label)
         screen = Screen()

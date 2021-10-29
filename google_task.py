@@ -4,6 +4,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+import functools
 from parser import Task, parse_date
 
 # If modifying these scopes, delete the file token.json.
@@ -51,8 +52,21 @@ def create_task(task: Task):
     return tasks.insert(tasklist=TODO_LIST, body=body).execute()
 
 
+@functools.lru_cache()
+def get_tasks() -> list[Task]:
+    results = tasks.list(tasklist=TODO_LIST, maxResults=10).execute()
+    items = results.get('items', [])
+    task_list: list[Task] = []
+    for t in items:
+        if t['status'] != 'needsAction':
+            continue
+        task_list.append(Task(title=t.get('title', None), description=t.get("notes", None), duedate=t.get("due", None)))
+    return task_list
+
+
 if __name__ == '__main__':
     create_task(
         Task(title="launcher creates task",
              description="launcher description",
              duedate="tuesday"))
+    get_tasks()
